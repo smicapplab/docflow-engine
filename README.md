@@ -1,4 +1,4 @@
-# IDP-LOC
+# docflow-engine
 
 Local-first Intelligent Document Processing (IDP) Proof of Concept focused on extracting structured data from Bank Statement PDFs.
 
@@ -45,6 +45,10 @@ Current scope is intentionally limited:
 - Redis-based job queue
 - Fully local processing (no Textract or external OCR services)
 
+- Data privacy is a core consideration; document extraction remains local-first by design
+- External LLM usage (if enabled) is limited strictly to transaction description enrichment
+- As this is a Proof of Concept, architecture decisions are cost-aware and optimized to avoid premature infrastructure overhead
+
 Future extensions may include:
 - OCR fallback
 - Mortgage underwriting analysis
@@ -56,7 +60,7 @@ Future extensions may include:
 ## 🗂 Project Structure
 
 ```
-IDP-LOC/
+docflow-engine/
 ├── be-idp/        # NestJS API
 ├── fe-idp/        # NextJS frontend
 ├── idp-engine/    # Python worker
@@ -142,8 +146,8 @@ python app/worker.py
 On Linux server:
 
 ```
-git clone <repo>
-cd IDP-LOC
+git clone https://github.com/smicapplab/docflow-engine.git
+cd docflow-engine
 docker compose up -d --build
 ```
 
@@ -162,6 +166,9 @@ Optional improvements:
 - No direct DB access from worker
 - Strict data contracts between services
 - Incremental expansion path
+- Privacy-conscious architecture (sensitive financial data processed locally)
+- External LLM calls are minimal, controlled, and optional
+- Cost-aware engineering (external services used pragmatically during POC phase)
 
 ---
 
