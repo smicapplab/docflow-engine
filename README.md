@@ -39,18 +39,19 @@ PostgreSQL
 Current scope is intentionally limited:
 
 - Digital-native PDF bank statements
+- Image-based / scanned bank statements (automatic OCR detection and processing)
 - Transaction table reconstruction
 - Ledger normalization (JSON output)
 - Balance reconciliation validation
 - Redis-based job queue
-- Fully local processing (no Textract or external OCR services)
+- Fully local processing (Tesseract OCR for scanned documents, no external document AI services such as Textract)
+- Automatic detection of text-based vs image-based PDFs (text-layer check → OCR fallback)
 
 - Data privacy is a core consideration; document extraction remains local-first by design
 - External LLM usage (if enabled) is limited strictly to transaction description enrichment
 - As this is a Proof of Concept, architecture decisions are cost-aware and optimized to avoid premature infrastructure overhead
 
 Future extensions may include:
-- OCR fallback
 - Mortgage underwriting analysis
 - Fraud detection
 - Cash flow forecasting
@@ -169,10 +170,11 @@ Optional improvements:
 - Privacy-conscious architecture (sensitive financial data processed locally)
 - External LLM calls are minimal, controlled, and optional
 - Cost-aware engineering (external services used pragmatically during POC phase)
+- Automatic OCR fallback based on PDF text-layer detection (no manual flags required)
 
 ---
 
 ## 📖 Status
 
 Initial infrastructure scaffolding complete.  
-Next step: implement Redis job publishing and worker extraction pipeline.
+Next step: implement Redis job publishing, worker extraction pipeline, and integrated OCR path for scanned statements.

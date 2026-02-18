@@ -11,6 +11,9 @@ class BankAExtractor:
         self.file_path = file_path
 
     def extract(self) -> LedgerOutput:
+        if not self._has_text_layer():
+            raise NotImplementedError("OCR path not implemented yet.")
+
         raw_lines = self._extract_raw_lines()
         metadata = self._parse_metadata(raw_lines)
         transactions = self._parse_transactions(raw_lines)
@@ -62,6 +65,18 @@ class BankAExtractor:
                     logger.debug(f"[Page {page_number}][Line {line_index}] {cleaned}")
 
         return extracted
+
+    def _has_text_layer(self) -> bool:
+        """
+        Detect whether the PDF contains an embedded text layer.
+        Returns True if at least one page contains extractable text.
+        """
+        with pdfplumber.open(self.file_path) as pdf:
+            for page in pdf.pages:
+                text = page.extract_text()
+                if text and text.strip():
+                    return True
+        return False
 
     def _parse_metadata(self, lines):
         raise NotImplementedError("Metadata parsing not implemented yet.")
