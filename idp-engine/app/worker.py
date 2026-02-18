@@ -1,6 +1,5 @@
 import os
 import time
-import sys
 
 def main():
     redis_host = os.getenv("REDIS_HOST", "localhost")
@@ -18,7 +17,7 @@ def main():
             time.sleep(10)
     except KeyboardInterrupt:
         print("Worker shutting down gracefully...")
-        sys.exit(0)
+        return
 
 
 if __name__ == "__main__":
