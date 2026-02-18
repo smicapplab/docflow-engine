@@ -3,15 +3,16 @@ FROM node:20-slim AS builder
 
 WORKDIR /app
 
-# Install dependencies
+# Install dependencies (deterministic)
 COPY package*.json ./
-RUN npm install
+RUN npm ci
 
-# Copy source
+# Copy source and build
 COPY . .
-
-# Build NestJS app
 RUN npm run build
+
+# Prune dev dependencies to produce production node_modules
+RUN npm prune --omit=dev
 
 
 # -------- Production Stage --------
@@ -19,16 +20,30 @@ FROM node:20-slim
 
 WORKDIR /app
 
+# Security / runtime best practices
 ENV NODE_ENV=production
+ENV TZ=UTC
 
-# Copy only necessary artifacts from builder
+# Install a minimal init system to handle PID 1 correctly
+RUN apt-get update && apt-get install -y --no-install-recommends dumb-init \
+  && rm -rf /var/lib/apt/lists/*
+
+# Create non-root user
+RUN groupadd -r nodejs && useradd -r -g nodejs nodejs
+
+# Copy only what we need from the builder (including pruned node_modules)
 COPY --from=builder /app/package*.json ./
-RUN npm install --omit=dev
-
+COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
+
+# Set proper ownership
+RUN chown -R nodejs:nodejs /app
 
 # Expose API port
 EXPOSE 3000
 
-# Start NestJS
-CMD ["node", "dist/main.js"]
+# Switch to non-root user
+USER nodejs
+
+# Start NestJS with init
+CMD ["dumb-init", "node", "dist/main.js"]
