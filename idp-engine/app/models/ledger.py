@@ -6,6 +6,7 @@ from typing import List, Optional
 
 class StatementMetadata(BaseModel):
     bank_name: str
+    account_holder: str
     account_number_masked: str
 
     statement_start: date
@@ -14,7 +15,7 @@ class StatementMetadata(BaseModel):
     opening_balance: Decimal
     closing_balance: Decimal
 
-    currency: str = "PHP"
+    currency: str = "USD"
 
 
 class Transaction(BaseModel):

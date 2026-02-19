@@ -1,25 +1,21 @@
 # docflow-engine
 
-Local-first Intelligent Document Processing (IDP) Proof of Concept focused on extracting structured data from Bank Statement PDFs.
+Local-first Intelligent Document Processing (IDP) Proof of Concept focused on extracting structured data from financial and compliance documents.
 
-This project is designed as a clean, production-oriented microservice architecture while remaining lightweight enough for local development and experimentation.
+This project is designed as a clean, production-oriented architecture while remaining lightweight for local development and experimentation.
 
 ---
 
 ## 📦 Architecture Overview
 
-The system is composed of three services:
+The system is composed of two primary services:
 
 ```
 NextJS (fe-idp)
         ↓
 NestJS API (be-idp)
         ↓
-Redis Queue
-        ↓
-Python Worker (idp-engine)
-        ↓
-NestJS Result Endpoint
+Python Extraction Engine (idp-engine)
         ↓
 PostgreSQL
 ```
@@ -27,31 +23,35 @@ PostgreSQL
 ### Services
 
 - **fe-idp** → NextJS frontend
-- **be-idp** → NestJS API (orchestrator)
-- **idp-engine** → Python worker (PDF parsing & ledger extraction)
-- **Redis** → Message broker
+- **be-idp** → NestJS API (orchestrator & persistence)
+- **idp-engine** → Python extraction engine (document parsing & structured output)
 - **PostgreSQL** → Persistence layer
+
+> The Python engine is stateless and does not access the database directly.
+> NestJS is responsible for orchestration, storage, and API exposure.
 
 ---
 
 ## 🎯 Project Scope (POC)
 
-Current scope is intentionally limited:
+Current scope is intentionally limited but designed for expansion:
 
 - Digital-native PDF bank statements
 - Image-based / scanned bank statements (automatic OCR detection and processing)
 - Transaction table reconstruction
 - Ledger normalization (JSON output)
 - Balance reconciliation validation
-- Redis-based job queue
 - Fully local processing (Tesseract OCR for scanned documents, no external document AI services such as Textract)
 - Automatic detection of text-based vs image-based PDFs (text-layer check → OCR fallback)
+- Rule-based document classification (offline-safe)
 
-- Data privacy is a core consideration; document extraction remains local-first by design
-- External LLM usage (if enabled) is limited strictly to transaction description enrichment
-- As this is a Proof of Concept, architecture decisions are cost-aware and optimized to avoid premature infrastructure overhead
+Future document types (planned):
+- Homeowners Insurance (HOI)
+- Government ID documents
+- Paystubs
+- Mortgage statements
 
-Future extensions may include:
+Future analytical extensions:
 - Mortgage underwriting analysis
 - Fraud detection
 - Cash flow forecasting
@@ -62,13 +62,42 @@ Future extensions may include:
 
 ```
 docflow-engine/
-├── be-idp/        # NestJS API
-├── fe-idp/        # NextJS frontend
-├── idp-engine/    # Python worker
+├── be-idp/           # NestJS API (orchestrator)
+├── fe-idp/           # NextJS frontend
+├── idp-engine/       # Python extraction engine
+│   ├── app/
+│   │   ├── core/     # Extraction, classification, routing
+│   │   ├── documents/# Document-specific parsers
+│   │   ├── models/   # Pydantic output contracts
+│   │   └── main.py   # Engine entrypoint
 ├── docker-compose.yml
 ├── .env
 └── README.md
 ```
+
+---
+
+## 🧠 Engine Processing Flow
+
+```
+PDF
+   ↓
+Raw Text Extraction (PDF or OCR)
+   ↓
+Document Classification
+   ↓
+Document-Specific Parser
+   ↓
+Normalization
+   ↓
+Validation / Reconciliation
+   ↓
+Confidence Scoring
+   ↓
+Structured JSON Output
+```
+
+The engine is document-type aware and layout-aware.
 
 ---
 
@@ -82,7 +111,7 @@ POSTGRES_PASSWORD=super_secure_password
 POSTGRES_DB=idp_db
 ```
 
-Do not commit `.env`.  
+Do not commit `.env`.
 Commit a `.env.example` instead if needed.
 
 ---
@@ -97,10 +126,9 @@ docker compose up --build
 
 This starts:
 
-- Redis
 - PostgreSQL
 - NestJS API
-- Python Worker
+- Python extraction engine
 
 Frontend can be run separately:
 
@@ -114,67 +142,48 @@ npm run dev
 
 ## 🧠 Development Workflow
 
-### Backend
+### Backend (NestJS)
 ```
 cd be-idp
 npm install
 npm run start:dev
 ```
 
-### Worker (local without Docker)
+### Python Engine (Local)
 ```
 cd idp-engine
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
-python app/worker.py
+python -m app.main /path/to/document.pdf
 ```
+
+The engine will output structured JSON.
 
 ---
 
-## 🔒 Production Considerations
+## 🔒 Design Principles
 
-- Containers use restart policies
-- Postgres and Redis use persistent volumes
-- Only API port (3000) is exposed
-- Services communicate over isolated Docker network
-- Environment variables injected via Docker Compose
-
----
-
-## 🚀 Deployment
-
-On Linux server:
-
-```
-git clone https://github.com/smicapplab/docflow-engine.git
-cd docflow-engine
-docker compose up -d --build
-```
-
-Optional improvements:
-- Add Nginx reverse proxy
-- Add HTTPS (Let's Encrypt)
-- Use managed DB/Redis for high availability
-
----
-
-## 📌 Design Principles
-
-- Clear service boundaries
-- Stateless worker
-- Queue-based processing
-- No direct DB access from worker
-- Strict data contracts between services
-- Incremental expansion path
+- Clear separation between orchestration and extraction
+- Stateless Python engine
+- No direct database access from extraction engine
+- Strict data contracts (Pydantic models)
+- Offline-safe classification (rule-based)
+- Automatic OCR fallback
+- Layout-aware parsing for semi-structured documents
+- Incremental expansion path for additional document types
 - Privacy-conscious architecture (sensitive financial data processed locally)
-- External LLM calls are minimal, controlled, and optional
-- Cost-aware engineering (external services used pragmatically during POC phase)
-- Automatic OCR fallback based on PDF text-layer detection (no manual flags required)
+- External LLM usage is optional and strictly limited to post-processing enrichment
+- Cost-aware engineering decisions during POC phase
 
 ---
 
 ## 📖 Status
 
-Initial infrastructure scaffolding complete.  
-Next step: implement Redis job publishing, worker extraction pipeline, and integrated OCR path for scanned statements.
+Infrastructure and engine scaffolding complete.
+
+Next steps:
+- Harden bank statement layout parser
+- Implement structured normalization validation
+- Add HOI parser module
+- Integrate engine invocation from NestJS API
