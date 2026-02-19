@@ -17,6 +17,8 @@ NestJS API (be-idp)
         ↓
 Python Extraction Engine (idp-engine)
         ↓
+NestJS API (be-idp)
+        ↓
 PostgreSQL
 ```
 
@@ -27,8 +29,9 @@ PostgreSQL
 - **idp-engine** → Python extraction engine (document parsing & structured output)
 - **PostgreSQL** → Persistence layer
 
-> The Python engine is stateless and does not access the database directly.
-> NestJS is responsible for orchestration, storage, and API exposure.
+> The Python engine is stateless and has **no direct database connection**.
+> It returns structured JSON back to NestJS, which is fully responsible for persistence,
+> orchestration, and API exposure.
 
 ---
 
